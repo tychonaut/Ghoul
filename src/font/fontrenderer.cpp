@@ -911,7 +911,7 @@ FontRenderer::BoundingBoxInformation FontRenderer::internalProjectionRender(Font
             {
                 return { size, static_cast<int>(lines.size()) };
             }
-
+            
             if (heightInPixels > textMaxSize) {
                 float scaleFix = static_cast<float>(textMaxSize) / heightInPixels;
                 if (renderType == 0) {
@@ -925,6 +925,7 @@ FontRenderer::BoundingBoxInformation FontRenderer::internalProjectionRender(Font
                           textScale * scaleFix + pos;
                 }
                 else {
+                    /*
                     glm::dvec3 normal = glm::normalize(cameraPos - glm::dvec3(pos));
                     glm::vec3 newRight = glm::vec3(glm::cross(cameraLookUp, normal));
                     glm::vec3 newUp = glm::vec3(glm::cross(normal, glm::dvec3(newRight)));
@@ -933,9 +934,10 @@ FontRenderer::BoundingBoxInformation FontRenderer::internalProjectionRender(Font
                     p1 = (x0 * newRight + y1 * newUp) * textScale * scaleFix + pos;
                     p2 = (x1 * newRight + y1 * newUp) * textScale * scaleFix + pos;
                     p3 = (x1 * newRight + y0 * newUp) * textScale * scaleFix + pos;
+                    */
                 }
             }
-
+            
             vertices.insert(vertices.end(), {
                 p0.x, p0.y, p0.z, s0, t0, outlineS0, outlineT0,
                 p1.x, p1.y, p1.z, s0, t1, outlineS0, outlineT1,
