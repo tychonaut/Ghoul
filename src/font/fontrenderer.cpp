@@ -829,6 +829,30 @@ FontRenderer::BoundingBoxInformation FontRenderer::internalProjectionRender(Font
     glm::vec2 size = glm::vec2(0.f);
     float heightInPixels = 0.0f;
 
+    glm::dvec3 normal(0.0);
+    glm::vec3 newRight(0.f);
+    glm::vec3 newUp(0.f);
+
+    if (renderType == 1) {
+        normal = glm::normalize(cameraPos - glm::dvec3(pos));
+        newRight = glm::vec3(glm::cross(cameraLookUp, normal));
+
+        float tmpLength = glm::length(newRight);
+        if (tmpLength < 0.099f) {
+            glm::dvec3 otherVector(
+                cameraLookUp.y,
+                cameraLookUp.x,
+                cameraLookUp.z
+            );
+            newRight = glm::normalize(glm::cross(otherVector, normal));
+        }
+        else {
+            newRight = glm::normalize(newRight);
+        }
+
+        newUp = glm::vec3(glm::cross(normal, glm::dvec3(newRight)));
+    }
+
     for (const std::string& line : lines) {
         movingPos.x = 0.f;
         //movingPos.x = pos.x;
@@ -877,10 +901,6 @@ FontRenderer::BoundingBoxInformation FontRenderer::internalProjectionRender(Font
                 p3 = (x1 * orthonormalRight + y0 * orthonormalUp) * textScale + pos;
             }
             else {
-                glm::dvec3 normal = glm::normalize(cameraPos - glm::dvec3(pos));
-                glm::vec3 newRight = glm::vec3(glm::cross(cameraLookUp, normal));
-                glm::vec3 newUp = glm::vec3(glm::cross(normal, glm::dvec3(newRight)));
-
                 p0 = (x0 * newRight + y0 * newUp) * textScale + pos;
                 p1 = (x0 * newRight + y1 * newUp) * textScale + pos;
                 p2 = (x1 * newRight + y1 * newUp) * textScale + pos;
@@ -899,6 +919,16 @@ FontRenderer::BoundingBoxInformation FontRenderer::internalProjectionRender(Font
                 glm::vec4(_framebufferSize.x, _framebufferSize.y, 1.0, 1.0);
 
             // The billboard is bigger than the maximum size allowed:
+            topLeft.x = topLeft.x < 0.f ? 0.f : topLeft.x;
+            topLeft.x = topLeft.x > _framebufferSize.x ? _framebufferSize.x : topLeft.x;
+            topLeft.y = topLeft.y < 0.f ? 0.f : topLeft.y;
+            topLeft.y = topLeft.y > 0.f ? _framebufferSize.y : topLeft.y;
+            
+            bottomLeft.x = bottomLeft.x < 0.f ? 0.f : bottomLeft.x;
+            bottomLeft.x = bottomLeft.x > _framebufferSize.x ? _framebufferSize.x : bottomLeft.x;
+            bottomLeft.y = bottomLeft.y < 0.f ? 0.f : bottomLeft.y;
+            bottomLeft.y = bottomLeft.y > _framebufferSize.y ? _framebufferSize.y : bottomLeft.y;
+
             heightInPixels =
                 heightInPixels == 0.0f ?
                 glm::length(topLeft - bottomLeft) :
@@ -925,16 +955,10 @@ FontRenderer::BoundingBoxInformation FontRenderer::internalProjectionRender(Font
                           textScale * scaleFix + pos;
                 }
                 else {
-                    /*
-                    glm::dvec3 normal = glm::normalize(cameraPos - glm::dvec3(pos));
-                    glm::vec3 newRight = glm::vec3(glm::cross(cameraLookUp, normal));
-                    glm::vec3 newUp = glm::vec3(glm::cross(normal, glm::dvec3(newRight)));
-
                     p0 = (x0 * newRight + y0 * newUp) * textScale * scaleFix + pos;
                     p1 = (x0 * newRight + y1 * newUp) * textScale * scaleFix + pos;
                     p2 = (x1 * newRight + y1 * newUp) * textScale * scaleFix + pos;
                     p3 = (x1 * newRight + y0 * newUp) * textScale * scaleFix + pos;
-                    */
                 }
             }
             
