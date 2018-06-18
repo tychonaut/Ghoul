@@ -28,6 +28,7 @@
 #include <ghoul/misc/assert.h>
 #include <algorithm>
 #include <sstream>
+#include <string>
 
 #ifdef WIN32
     #include <Windows.h>
@@ -35,8 +36,8 @@
     #include <intrin.h>
     #pragma comment(lib, "User32.lib")
     #pragma comment(lib, "Kernel32.lib")
-    typedef void (WINAPI *PGNSI)(LPSYSTEM_INFO);
-    typedef BOOL (WINAPI *PGPI)(DWORD, DWORD, DWORD, DWORD, DWORD);
+    typedef void (WINAPI *PGNSI)(LPSYSTEM_INFO); // NOLINT
+    typedef BOOL (WINAPI *PGPI)(DWORD, DWORD, DWORD, DWORD, DWORD); // NOLINT
 #else
     #ifdef __APPLE__
         #include <sys/sysctl.h>
@@ -50,9 +51,6 @@
 #endif
 
 namespace std {
-    std::string to_string(
-        ghoul::systemcapabilities::GeneralCapabilitiesComponent::OperatingSystem os);
-
     std::string to_string(
         ghoul::systemcapabilities::GeneralCapabilitiesComponent::OperatingSystem os)
     {
@@ -99,11 +97,11 @@ GeneralCapabilitiesComponent::GeneralCapabilitiesComponentError::
     : RuntimeError(std::move(msg), "GeneralCapabilitiesComponent")
 {}
 
-GeneralCapabilitiesComponent::OperatingSystemError::OperatingSystemError(std::string d,
-                                                                         std::string e)
-    : GeneralCapabilitiesComponentError(d + ". Error: " + e)
-    , description(std::move(d))
-    , errorMessage(std::move(e))
+GeneralCapabilitiesComponent::OperatingSystemError::OperatingSystemError(std::string desc,
+                                                                     std::string errorMsg)
+    : GeneralCapabilitiesComponentError(desc + ". Error: " + errorMsg)
+    , description(std::move(desc))
+    , errorMessage(std::move(errorMsg))
 {}
 
 GeneralCapabilitiesComponent::MainMemoryError::MainMemoryError(std::string msg)
@@ -144,7 +142,7 @@ void GeneralCapabilitiesComponent::detectOS() {
 
 #pragma warning (push)
 #pragma warning (disable : 4996)
-    BOOL osVersionInfoEx = GetVersionEx((OSVERSIONINFO*) &osVersionInfo);
+    BOOL osVersionInfoEx = GetVersionEx((OSVERSIONINFO*) &osVersionInfo); // NOLINT
 #pragma warning (pop)
 
     if (osVersionInfoEx == 0) {
@@ -154,14 +152,14 @@ void GeneralCapabilitiesComponent::detectOS() {
             FORMAT_MESSAGE_FROM_SYSTEM |
             FORMAT_MESSAGE_ALLOCATE_BUFFER |
             FORMAT_MESSAGE_IGNORE_INSERTS,
-            NULL,
+            nullptr,
             error,
             MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-            (LPTSTR)&errorBuffer,
+            (LPTSTR)&errorBuffer, // NOLINT
             0,
-            NULL
+            nullptr
         );
-        if (errorBuffer != nullptr) {
+        if (errorBuffer) {
             std::string errorMsg(errorBuffer);
             LocalFree(errorBuffer);
             throw OperatingSystemError(
@@ -175,19 +173,19 @@ void GeneralCapabilitiesComponent::detectOS() {
         );
     }
     HMODULE module = GetModuleHandle(TEXT("kernel32.dll"));
-    if (module == 0) {
+    if (module == nullptr) {
         DWORD error = GetLastError();
         LPTSTR errorBuffer = nullptr;
         FormatMessage(
             FORMAT_MESSAGE_FROM_SYSTEM |
             FORMAT_MESSAGE_ALLOCATE_BUFFER |
             FORMAT_MESSAGE_IGNORE_INSERTS,
-            NULL,
+            nullptr,
             error,
             MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-            (LPTSTR)&errorBuffer,
+            (LPTSTR)&errorBuffer, // NOLINT
             0,
-            NULL
+            nullptr
         );
         if (errorBuffer != nullptr) {
             std::string errorMsg(errorBuffer);
@@ -206,7 +204,7 @@ void GeneralCapabilitiesComponent::detectOS() {
         module,
         "GetNativeSystemInfo"
     ));
-    if (procedureGetNativeSystemInfo != nullptr) {
+    if (procedureGetNativeSystemInfo) {
         procedureGetNativeSystemInfo(&systemInfo);
     }
     else {
@@ -448,9 +446,9 @@ void GeneralCapabilitiesComponent::detectCPU() {
     __cpuid(CPUInfo, 0);
     nIds = CPUInfo[0];
     memset(CPUString, 0, sizeof(CPUString));
-    *((int*)CPUString) = CPUInfo[1];
-    *((int*)(CPUString + 4)) = CPUInfo[3];
-    *((int*)(CPUString + 8)) = CPUInfo[2];
+    *((int*)CPUString) = CPUInfo[1]; // NOLINT
+    *((int*)(CPUString + 4)) = CPUInfo[3]; // NOLINT
+    *((int*)(CPUString + 8)) = CPUInfo[2]; // NOLINT
 
     // Get the information associated with each valid Id
     for (unsigned i = 0; i <= nIds; ++i) {
@@ -458,10 +456,10 @@ void GeneralCapabilitiesComponent::detectCPU() {
 
         // Interpret CPU feature information.
         if (i == 1) {
-            bSSE3NewInstructions = (CPUInfo[2] & 0x1) || false;
-            bMONITOR_MWAIT = (CPUInfo[2] & 0x8) || false;
-            bCPLQualifiedDebugStore = (CPUInfo[2] & 0x10) || false;
-            bThermalMonitor2 = (CPUInfo[2] & 0x100) || false;
+            bSSE3NewInstructions = (CPUInfo[2] & 0x1);
+            bMONITOR_MWAIT = (CPUInfo[2] & 0x8);
+            bCPLQualifiedDebugStore = (CPUInfo[2] & 0x10);
+            bThermalMonitor2 = (CPUInfo[2] & 0x100);
             nFeatureInfo = CPUInfo[3];
         }
     }
@@ -477,14 +475,16 @@ void GeneralCapabilitiesComponent::detectCPU() {
         __cpuid(CPUInfo, i);
 
         // Interpret CPU brand string and cache information.
-        if (i == 0x80000002)
+        if (i == 0x80000002) {
             memcpy(CPUBrandString, CPUInfo, sizeof(CPUInfo));
-        else if (i == 0x80000003)
+        }
+        else if (i == 0x80000003) {
             memcpy(CPUBrandString + 16, CPUInfo, sizeof(CPUInfo));
-        else if (i == 0x80000004)
+        }
+        else if (i == 0x80000004) {
             memcpy(CPUBrandString + 32, CPUInfo, sizeof(CPUInfo));
-        else if (i == 0x80000006)
-        {
+        }
+        else if (i == 0x80000006) {
             _cacheLineSize = CPUInfo[2] & 0xff;
             _L2Associativity = (CPUInfo[2] >> 12) & 0xf;
             _cacheSize = (CPUInfo[2] >> 16) & 0xffff;
@@ -493,9 +493,8 @@ void GeneralCapabilitiesComponent::detectCPU() {
 
     // Get extensions list
     std::stringstream extensions;
-    if (nFeatureInfo || bSSE3NewInstructions ||
-        bMONITOR_MWAIT || bCPLQualifiedDebugStore ||
-        bThermalMonitor2)
+    if (nFeatureInfo || bSSE3NewInstructions || bMONITOR_MWAIT ||
+        bCPLQualifiedDebugStore || bThermalMonitor2)
     {
 
         if (bSSE3NewInstructions) {
@@ -511,15 +510,11 @@ void GeneralCapabilitiesComponent::detectCPU() {
         if (bThermalMonitor2) {
             extensions << "tm2 ";
         }
-        unsigned i = 0;
-        nIds = 1;
-        while (i < (sizeof(szFeatures) / sizeof(const char*))) {
+
+        for (size_t i = 0; i < szFeatures.size(); ++i, nIds <<= 1) {
             if (nFeatureInfo & nIds) {
                 extensions << szFeatures[i] << " ";
             }
-
-            nIds <<= 1;
-            ++i;
         }
     }
 
@@ -687,7 +682,7 @@ std::string GeneralCapabilitiesComponent::operatingSystemString() const {
     return std::to_string(_operatingSystem) + " " + _operatingSystemExtra;
 }
 
-std::string GeneralCapabilitiesComponent::fullOperatingSystem() const {
+const std::string& GeneralCapabilitiesComponent::fullOperatingSystem() const {
     return _fullOperatingSystem;
 }
 
@@ -711,7 +706,7 @@ unsigned int GeneralCapabilitiesComponent::cacheSize() const {
     return _cacheSize;
 }
 
-std::string GeneralCapabilitiesComponent::extensions() const {
+const std::string& GeneralCapabilitiesComponent::extensions() const {
     return _extensions;
 }
 

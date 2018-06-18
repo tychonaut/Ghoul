@@ -63,6 +63,7 @@ namespace constants {
 #include "tests/test_filesystem.inl"
 #include "tests/test_luatodictionary.inl"
 #include "tests/test_templatefactory.inl"
+#include "tests/test_csvreader.inl"
 
 using namespace ghoul::filesystem;
 using namespace ghoul::logging;
@@ -75,7 +76,7 @@ using namespace ghoul::logging;
 
 int main(int argc, char** argv) {
     LogManager::initialize(LogLevel::Fatal);
-    LogMgr.addLog(std::make_shared<ConsoleLog>());
+    LogMgr.addLog(std::make_unique<ConsoleLog>());
 
     FileSystem::initialize();
     

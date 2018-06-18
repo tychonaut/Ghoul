@@ -78,7 +78,7 @@ public:
         LogLevel minimumLogLevel = LogLevel::AllLogging);
 
     /// Destructor that closes and finalizes the HTML file
-    ~HTMLLog();
+    virtual ~HTMLLog();
 
     /**
      * Method that logs a message with a given <code>level</code> and
@@ -116,7 +116,7 @@ protected:
     static std::string colorForLevel(LogLevel level);
 
 private:
-    bool _customStyling;
+    bool _useCustomStyling;
 };
 
 } // namespace ghoul::logging

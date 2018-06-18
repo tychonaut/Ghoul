@@ -46,12 +46,12 @@ public:
     /// Main exception that is thrown if an error occured in the detection of general
     /// capabilities
     struct GeneralCapabilitiesComponentError : public RuntimeError {
-        explicit GeneralCapabilitiesComponentError(std::string message);
+        explicit GeneralCapabilitiesComponentError(std::string msg);
     };
 
     /// Exception that is thrown if there was an error detecting the operating system
     struct OperatingSystemError : public GeneralCapabilitiesComponentError {
-        explicit OperatingSystemError(std::string description, std::string errorMessage);
+        explicit OperatingSystemError(std::string desc, std::string errorMsg);
 
         /// The general description of the error
         std::string description;
@@ -62,7 +62,7 @@ public:
 
     /// Exception that is thrown if there was an error detecting the main memory
     struct MainMemoryError : public GeneralCapabilitiesComponentError {
-        explicit MainMemoryError(std::string message);
+        explicit MainMemoryError(std::string msg);
     };
 
     /// This enum stores the possible operating systems that can be detected
@@ -122,7 +122,7 @@ public:
      *
      * \return The operating system as a parsed string
      */
-    std::string fullOperatingSystem() const;
+    const std::string& fullOperatingSystem() const;
 
     /**
      * Returns the amount of available, installed main memory (RAM) on the system in MB.
@@ -166,7 +166,7 @@ public:
      *
      * \return The extension
      */
-    std::string extensions() const;
+    const std::string& extensions() const;
 
     /**
      * Returns the <code>CPU</code> string.
@@ -233,6 +233,11 @@ protected:
 };
 
 } // namespace ghoul::systemcapabilities
+
+namespace std {
+    std::string to_string(
+        ghoul::systemcapabilities::GeneralCapabilitiesComponent::OperatingSystem os);
+} // namespace std
 
 #define CpuCap (                                                                         \
     ghoul::systemcapabilities::SystemCapabilities::ref().component<                      \

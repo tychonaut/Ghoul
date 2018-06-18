@@ -28,8 +28,8 @@
 #ifndef __GHOUL___BUFFER___H__
 #define __GHOUL___BUFFER___H__
 
+#include <ghoul/misc/boolean.h>
 #include <ghoul/misc/exception.h>
-
 #include <string>
 #include <vector>
 
@@ -45,7 +45,7 @@ namespace ghoul {
  */
 class Buffer {
 public:
-    enum class Compress { Yes, No };
+    BooleanType(Compress);
 
     using value_type = unsigned char;
     using size_type = std::vector<value_type>::size_type;
@@ -77,7 +77,7 @@ public:
      *
      * \param other The Buffer to copy the data from
      */
-    Buffer(const Buffer& other);
+    Buffer(const Buffer& other) = default;
 
     /**
      * Moves the original object into this one. The original object must not be used after

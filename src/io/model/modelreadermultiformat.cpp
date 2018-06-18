@@ -25,6 +25,7 @@
 
 #include <ghoul/io/model/modelreadermultiformat.h>
 
+#include <ghoul/fmt.h>
 #include <ghoul/logging/logmanager.h>
 #include <ghoul/misc/assert.h>
 #include <ghoul/opengl/ghoul_gl.h>
@@ -33,10 +34,6 @@
 #include <assimp/scene.h>
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
-#include <cstdio>
-#include <ghoul/fmt.h>
-#include <fstream>
-#include <iostream>
 #include <memory>
 #include <vector>
 
@@ -91,21 +88,21 @@ std::unique_ptr<opengl::VertexBufferObject> ModelReaderMultiFormat::loadModel(
         3,
         GL_FLOAT,
         sizeof(Vertex),
-        offsetof(Vertex, location)
+        offsetof(Vertex, location) // NOLINT
     );
     vbo->vertexAttribPointer(
         1,
         2,
         GL_FLOAT,
         sizeof(Vertex),
-        offsetof(Vertex, tex)
+        offsetof(Vertex, tex) // NOLINT
     );
     vbo->vertexAttribPointer(
         2,
         3,
         GL_FLOAT,
         sizeof(Vertex),
-        offsetof(Vertex, normal)
+        offsetof(Vertex, normal) // NOLINT
     );
     return vbo;
 }
@@ -158,7 +155,7 @@ void ModelReaderMultiFormat::loadModel(
     for (const aiMesh* meshPtr : meshArray) {
         // Walk through each of the mesh's vertices
         for (unsigned int i = 0; i < meshPtr->mNumVertices; i++) {
-            Vertex vTmp;
+            Vertex vTmp {};
 
             // Positions
             vTmp.location[0] = meshPtr->mVertices[i].x;

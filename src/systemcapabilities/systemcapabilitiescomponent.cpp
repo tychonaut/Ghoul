@@ -48,7 +48,7 @@ namespace ghoul {
 
 template <>
 ghoul::systemcapabilities::SystemCapabilitiesComponent::Verbosity
-from_string(const std::string& str)
+from_string(const std::string& string)
 {
     using Verbosity = ghoul::systemcapabilities::SystemCapabilitiesComponent::Verbosity;
 
@@ -60,7 +60,7 @@ from_string(const std::string& str)
     };
 
     // Throws a std::out_of_range exception if the type could not be found
-    return VerbosityMap.at(str);
+    return VerbosityMap.at(string);
 }
 
 } // namespace ghoul
@@ -68,8 +68,8 @@ from_string(const std::string& str)
 namespace ghoul::systemcapabilities {
 
 #ifdef GHOUL_USE_WMI
-    IWbemLocator* SystemCapabilitiesComponent::_iwbemLocator = nullptr;
-    IWbemServices* SystemCapabilitiesComponent::_iwbemServices = nullptr;
+IWbemLocator* SystemCapabilitiesComponent::_iwbemLocator = nullptr;
+IWbemServices* SystemCapabilitiesComponent::_iwbemServices = nullptr;
 
 SystemCapabilitiesComponent::WMIError::WMIError(std::string msg, HRESULT code)
     : RuntimeError(msg + ". Error Code: " + std::to_string(code), "WMI")
@@ -99,7 +99,8 @@ SystemCapabilitiesComponent::~SystemCapabilitiesComponent() {
 
 #ifdef GHOUL_USE_WMI
 void SystemCapabilitiesComponent::initializeWMI() {
-    const std::string _loggerCat = "SystemCapabilitiesComponent.WMI";
+    constexpr const char* _loggerCat = "SystemCapabilitiesComponent.WMI";
+
     ghoul_assert(!isWMIInitialized(), "WMI must not have been initialized");
 
     LDEBUG("Begin initializing WMI");
@@ -107,14 +108,14 @@ void SystemCapabilitiesComponent::initializeWMI() {
     // http://msdn.microsoft.com/en-us/library/aa390423.aspx
     // All rights remain with their original copyright owners
 
-    HRESULT hRes = CoInitializeEx(0, COINIT_APARTMENTTHREADED);
+    HRESULT hRes = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
     if (FAILED(hRes)) {
         throw WMIError("WMI initialization failed. 'CoInitializeEx' failed", hRes);
     }
 
     hRes = CoCreateInstance(
         CLSID_WbemLocator,
-        0,
+        nullptr,
         CLSCTX_INPROC_SERVER,
         IID_IWbemLocator,
         reinterpret_cast<LPVOID*>(&_iwbemLocator)
@@ -131,12 +132,12 @@ void SystemCapabilitiesComponent::initializeWMI() {
 
     hRes = _iwbemLocator->ConnectServer(
         _bstr_t(L"ROOT\\CIMV2"), // Object path of WMI namespace
-        NULL,                    // User name. NULL = current user
-        NULL,                    // User password. NULL = current
-        0,                       // Locale. NULL indicates current
-        NULL,                    // Security flags.
-        0,                       // Authority (for example, Kerberos)
-        0,                       // Context object
+        nullptr,                 // User name. NULL = current user
+        nullptr,                 // User password. NULL = current
+        nullptr,                 // Locale. NULL indicates current
+        0,                       // Security flags.
+        nullptr,                 // Authority (for example, Kerberos)
+        nullptr,                 // Context object
         &_iwbemServices          // pointer to IWbemServices proxy
     );
     if (FAILED(hRes)) {
@@ -155,10 +156,10 @@ void SystemCapabilitiesComponent::initializeWMI() {
         _iwbemServices,              // Indicates the proxy to set
         RPC_C_AUTHN_WINNT,           // RPC_C_AUTHN_xxx
         RPC_C_AUTHZ_NONE,            // RPC_C_AUTHZ_xxx
-        NULL,                        // Server principal name
+        nullptr,                     // Server principal name
         RPC_C_AUTHN_LEVEL_CALL,      // RPC_C_AUTHN_LEVEL_xxx
         RPC_C_IMP_LEVEL_IMPERSONATE, // RPC_C_IMP_LEVEL_xxx
-        NULL,                        // client identity
+        nullptr,                     // client identity
         EOAC_NONE                    // proxy capabilities
     );
     if (FAILED(hRes)) {
@@ -173,7 +174,7 @@ void SystemCapabilitiesComponent::initializeWMI() {
 }
 
 void SystemCapabilitiesComponent::deinitializeWMI() {
-    const std::string _loggerCat = "SystemCapabilitiesComponent.WMI";
+    constexpr const char* _loggerCat = "SystemCapabilitiesComponent.WMI";
     ghoul_assert(isWMIInitialized(), "WMI must have been initialized");
 
     LDEBUG("Deinitializing WMI.");
@@ -191,7 +192,7 @@ void SystemCapabilitiesComponent::deinitializeWMI() {
 
 std::wstring str2wstr(const std::string& str) {
     int stringLength = static_cast<int>(str.length() + 1);
-    int len = MultiByteToWideChar(CP_ACP, 0, str.c_str(), stringLength, 0, 0);
+    int len = MultiByteToWideChar(CP_ACP, 0, str.c_str(), stringLength, nullptr, 0);
     std::vector<wchar_t> buf(len);
     MultiByteToWideChar(CP_ACP, 0, str.c_str(), stringLength, buf.data(), len);
     return std::wstring(buf.begin(), buf.end());
@@ -199,9 +200,27 @@ std::wstring str2wstr(const std::string& str) {
 
 std::string wstr2str(const std::wstring& wstr) {
     int stringLength = static_cast<int>(wstr.length() + 1);
-    int len = WideCharToMultiByte(CP_ACP, 0, wstr.c_str(), stringLength, 0, 0, 0, 0);
+    int len = WideCharToMultiByte(
+        CP_ACP,
+        0,
+        wstr.c_str(),
+        stringLength,
+        nullptr,
+        0,
+        nullptr,
+        nullptr
+    );
     std::vector<char> buf(len);
-    WideCharToMultiByte(CP_ACP, 0, wstr.c_str(), stringLength, buf.data(), len, 0, 0);
+    WideCharToMultiByte(
+        CP_ACP,
+        0,
+        wstr.c_str(),
+        stringLength,
+        buf.data(),
+        len,
+        nullptr,
+        nullptr
+    );
     return std::string(buf.begin(), buf.end());
 }
 
@@ -210,8 +229,8 @@ bool SystemCapabilitiesComponent::isWMIInitialized() {
 }
 
 VARIANT* SystemCapabilitiesComponent::queryWMI(const std::string& wmiClass,
-                                               const std::string& attribute) {
-    const std::string _loggerCat = "SystemCapabilitiesComponent.WMI";
+                                               const std::string& attribute)
+{
     ghoul_assert(isWMIInitialized(), "WMI must have been initialized");
     ghoul_assert(!wmiClass.empty(), "wmiClass must not be empty");
     ghoul_assert(!attribute.empty(), "Attribute must not be empty");
@@ -223,7 +242,7 @@ VARIANT* SystemCapabilitiesComponent::queryWMI(const std::string& wmiClass,
         bstr_t("WQL"),
         bstr_t(query.c_str()),
         WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
-        NULL,
+        nullptr,
         &enumerator
     );
     if (FAILED(hRes)) {
@@ -234,26 +253,21 @@ VARIANT* SystemCapabilitiesComponent::queryWMI(const std::string& wmiClass,
     ULONG returnValue = 0;
     HRESULT hr = S_OK;
     if (enumerator) {
-        hr = enumerator->Next(
-            WBEM_INFINITE,
-            1,
-            &pclsObject,
-            &returnValue
-        );
+        hr = enumerator->Next(WBEM_INFINITE, 1, &pclsObject, &returnValue );
         if (!FAILED(hRes) && returnValue) {
             result = new VARIANT;
             hr = pclsObject->Get(
                 LPCWSTR(str2wstr(attribute).c_str()),
                 0,
                 result,
-                0,
-                0
+                nullptr,
+                nullptr
             );
         }
     }
 
     if (FAILED(hr)) {
-        if (result != 0) {
+        if (result) {
             VariantClear(result);
         }
         throw WMIError("No WMI query result", hr);

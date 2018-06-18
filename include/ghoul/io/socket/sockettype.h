@@ -23,27 +23,25 @@
  * OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                                         *
  ****************************************************************************************/
 
-#include <ghoul/cmdparser/multiplecommand.h>
+#ifndef __GHOUL___SOCKETTYPE___H__
+#define __GHOUL___SOCKETTYPE___H__
 
-namespace ghoul::cmdparser {
+ // OS specific socket implementation normalization.
+#ifdef WIN32
+using _SOCKET = size_t;
+using _SOCKLEN = int;
+#else //linux & macOS
 
-MultipleCommandZeroArguments::MultipleCommandZeroArguments(int& nExecutions,
-                                                           std::string name,
-                                                           std::string shortName,
-                                                           std::string infoText)
-    : CommandlineCommand(
-        std::move(name),
-        std::move(shortName),
-        std::move(infoText),
-        "",
-        0,
-        CommandlineCommand::MultipleCalls::Yes
-    )
-    , _ptr(nExecutions)
-{}
+#include <sys/socket.h>
+#include <sys/types.h>
 
-void MultipleCommandZeroArguments::execute(const std::vector<std::string>&) {
-    ++_ptr;
-}
+using _SOCKET = int;
+using _SOCKLEN = socklen_t;
 
-} // namespace ghoul::cmdparser
+#ifndef INVALID_SOCKET
+#define INVALID_SOCKET (_SOCKET)(~0)
+#endif // INVALID_SOCKET
+
+#endif // WIN32
+
+#endif // __GHOUL___SOCKETTYPE___H__

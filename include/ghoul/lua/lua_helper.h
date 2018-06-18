@@ -26,6 +26,7 @@
 #ifndef __GHOUL___LUA_HELPER___H__
 #define __GHOUL___LUA_HELPER___H__
 
+#include <ghoul/misc/boolean.h>
 #include <ghoul/misc/exception.h>
 
 struct lua_State;
@@ -35,11 +36,11 @@ namespace ghoul { class Dictionary; }
 namespace ghoul::lua {
 
 struct LuaRuntimeException : public RuntimeError {
-    explicit LuaRuntimeException(std::string message);
+    explicit LuaRuntimeException(std::string msg);
 };
 
 struct LuaFormatException : public LuaRuntimeException {
-    explicit LuaFormatException(std::string message, std::string file = "");
+    explicit LuaFormatException(std::string msg, std::string file = "");
     std::string filename;
 };
 
@@ -55,17 +56,38 @@ struct LuaExecutionException : public LuaRuntimeException {
     std::string filename;
 };
 
+/// If an instance of this struct is passed to the #push method, it will cause a nil value
+/// to be pushed onto the stack
+struct nil_t {};
+
+BooleanType(PopValue);
+
+
 /**
  * Returns the location of the calling function using <code>luaL_where</code> and returns
  * that location as a string. This method is just a wrapper around this function and its
  * use is for non-fatal error handling.
  *
- * \param state The Lua state that is to be exermined
+ * \param state The Lua state that is to be examined
  * \return The location of the function whose stack is being tested
  *
  * \pre \p state must not be nullptr
  */
-std::string errorLocation(lua_State* state);
+[[nodiscard]] const char* errorLocation(lua_State* state);
+
+/**
+ * Raises a fatal Lua error by calling the \c luaL_error function with the passed
+ * parameters.
+ *
+ * \param state The Lua state in which the error is raised
+ * \param message The error message that will be printed to the Lua console alongside the
+ *        file name and line number
+ * \return The symbolic value that is returned by the \c luaL_error function to signal the
+ *         Lua interpreter that an error has occurred
+ *
+ * \pre \p state must not be nullptr
+ */
+[[nodiscard]] int luaError(lua_State* state, std::string message);
 
 
 /**
@@ -88,7 +110,7 @@ std::string errorLocation(lua_State* state);
  *
  * \pre \p state must not be nullptr
  */
-std::string stackInformation(lua_State* state);
+[[nodiscard]] std::string stackInformation(lua_State* state);
 
 
 /**
@@ -281,16 +303,6 @@ void runScriptFile(lua_State* state, const std::string& filename);
 void runScript(lua_State* state, const std::string& script);
 
 /**
- * This function calls into the Lua library function <code>luaL_checkstring</code> and,
- * if successful, pops the string from the stack. If the top argument is not a string,
- * the stack remains untouched.
- *
- * \param L The Lua stack to be inspected
- * \return The string or <code>nullptr</code> if the top element is not a string
- */
-const char* checkStringAndPop(lua_State* L);
-
-/**
  * Checks the number of arguments on the Lua stack against the \p expected number of
  * parameters. If the numbers do not agree, an error is logged and a
  * ghoul::lua::LuaExecutionException is raised.
@@ -361,18 +373,45 @@ int checkArgumentsAndThrow(lua_State* L, int expected, std::pair<int, int> range
 void verifyStackSize(lua_State* L, int expected = 0);
 
 /**
- * Extracts a value from the top of the provided stack and returns it.
+ * Extracts a value from the provided location of the provided stack and returns it.
  *
- * \tparam T The type of the return value. If the value at the top of the stack is not T
- *         a LuaFormatException is thrown
+ * \tparam T The type of the return value. If the value at the provided location of the
+ *           stack is not T a LuaFormatException is thrown
  * \param L The stack from from which the top value is extracted
+ * \param location The location from which the value should be extracted
+ * \param shouldPopValue If the value was successfully retrieved, should it be popped from
+ *        the stack
  *
- * \throw LuaFormatException If the top value of the stack is not T
- * \pre The stack of \p L must not be empty
+ * \throw LuaFormatException If the value at the provided stack location is not T
+ * \pre \L must not be nullptr
  */
 template <typename T>
-T value(lua_State* L);
+T value(lua_State* L, int location = -1, PopValue shouldPopValue = PopValue::No);
 
+/**
+ * Extract an arbitrary number of values from the top of the provided stack and returns
+ * them.
+ *
+ * \tparam T1 The type of the first value that is popped from the stack. If the value at
+ *         the top of the stack is not T1 a LuaFormatException is thrown
+ * \tparam T2 The type of the second value that is popped from the stack. If the value at
+ *         the second position of the stack is not T2 a LuaFormatException is thrown
+ * \tparam Ts The types of the other values that are popped from the stack. If one of the
+ *         value on the stack is not Ts a LuaFormatException is thrown
+ * \param L The stack from from which the values is extracted
+ *
+ * \throw LuaFormatException If the type of any value on the stack is not correct
+ * \pre \L must not be nullptr
+ * \pre The stack of \p L must not be empty
+ *
+ * \note This method is an overload of #pop that supports multiple types. Due to the way
+ *       the overload resolution with template parameter packs works, we have to
+ *       explicitly mention the first two parameter types in the template declaration as
+ *       the parameter pack might be empty and could thus otherwise result in a ambigious
+ *       function call
+ */
+// template <typename T1, typename T2, typename... Ts>
+// std::tuple<T1, T2, Ts...> pop(lua_State* L);
 
 /**
  * Extracts a named value from the global variables of the provided stack and returns it.
@@ -381,14 +420,42 @@ T value(lua_State* L);
  *         a LuaFormatException is thrown
  * \param L The stack from from which the top value is extracted
  * \param name The name of the global variable that is to be extracted
+ * \param shouldPopValue If the value was successfully retrieved, should it be popped from
+ *        the stack
  *
  * \throw LuaFormatException If the value of \p name is not T
+ * \pre \L must not be nullptr
  * \pre The stack of \p L must not be empty
  * \pre \p name must not be nullptr
  * \pre \p name must not be empty
  */
 template <typename T>
-T value(lua_State* L, const char* name);
+T value(lua_State* L, const char* name, PopValue shouldPopValue = PopValue::No);
+
+/**
+ * Pushes the passed parameters \p args onto the provided stack \p L in the order that
+ * they are specified in this function call. All passed parameters must be of a type that
+ * can be converted to a type that can be pushed to the stack, otherwise the function call
+ * will generate a compile error at the calling location. If no arguments are passed to
+ * this function, it will be a no-op. If one of the parameters is an instance of the
+ * nil_t tag struct, it will cause a nil value to be pushed to the stack.
+ *
+ * The allowed types for T are:
+ *  - integer number types)
+ *  - floating point types
+ *  - bool
+ *  - nil_t for pushing a nil value
+ *  - pointers which are pushed as light user data
+ *
+ * \tparam Ts the list of types of passed arguments
+ * \param L The lua_State onto which the \p arguments are pushed
+ * \param arguments The variable arguments that are pushed to the stack in the order in
+ *        which they appear in this function call
+ *
+ * \pre \L must not be nullptr
+ */
+template <typename... Ts>
+void push(lua_State* L, Ts... arguments);
 
 namespace internal {
     void deinitializeGlobalState();

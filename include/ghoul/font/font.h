@@ -76,7 +76,7 @@ public:
     /// The exception that gets thrown when a FreeType-specific error occurs
     struct FreeTypeException : public FontException {
         explicit FreeTypeException(std::string name, float size, int code,
-            std::string message);
+            std::string msg);
 
         /// The name of the font for which the FreeType error occurred
         std::string fontName;
@@ -106,17 +106,12 @@ public:
         friend class Font;
 
         /// The default constructor for a Glyph
-        Glyph(wchar_t character,
-              int width = 0,
-              int height = 0,
-              float leftBearing = 0.f,
-              float topBearing = 0.f,
-              float advanceX = 0.f,
-              float advanceY = 0.f,
-              glm::vec2 texCoordTopLeft = glm::vec2(0.f),
-              glm::vec2 texCoordBottomRight = glm::vec2(0.f),
-              glm::vec2 outlineTexCoordTopLeft = glm::vec2(0.f),
-              glm::vec2 outlineTexCoordBottomRight = glm::vec2(0.f)
+        Glyph(wchar_t character, int width = 0, int height = 0, float leftBearing = 0.f,
+            float topBearing = 0.f, float advanceX = 0.f, float advanceY = 0.f,
+            glm::vec2 texCoordTopLeft = glm::vec2(0.f),
+            glm::vec2 texCoordBottomRight = glm::vec2(0.f),
+            glm::vec2 outlineTexCoordTopLeft = glm::vec2(0.f),
+            glm::vec2 outlineTexCoordBottomRight = glm::vec2(0.f)
         );
 
         bool operator==(const Glyph& rhs) const;
@@ -230,6 +225,7 @@ public:
 
         /// Normalized texture coordinate of top-left corner
         glm::vec2 _topLeft;
+
         /// Normalized texture coordinate of bottom-right corner
         glm::vec2 _bottomRight;
 
@@ -263,11 +259,8 @@ public:
      * \pre \p filename must not be empty
      * \pre \p pointSize must be positive and bigger than 0
      */
-    Font(std::string filename,
-         float pointSize,
-         opengl::TextureAtlas& atlas,
-         Outline hasOutline = Outline::Yes,
-         float outlineThickness = 1.f
+    Font(std::string filename, float pointSize, opengl::TextureAtlas& atlas,
+         Outline hasOutline = Outline::Yes, float outlineThickness = 1.f
     );
 
     /**
@@ -275,7 +268,7 @@ public:
      *
      * \return The name of the Font
      */
-    std::string name() const;
+    const std::string& name() const;
 
     /**
      * Returns the font size of this Font.
@@ -304,16 +297,12 @@ public:
      * this Font. The value returned is in pixel values and provides the width and the
      * height of the text if it were to be rendered.
      *
-     * \param text The format text that is rendered to the screen. This text can contain
-     *        symbolic constants (the same as in printf) to refer to later variable
-     *        arguments, which are substituted. The <code>text</code> can also contain
-     *        '\\n' to have a linebreak, which is of the correct length with regard to the
-     *        selected font. This parameter cannot be a <code>nullptr</code>.
+     * \param text The text that is rendered to the screen. The <code>text</code> can also
+     *        contain '\\n' to have a linebreak, which is of the correct length for the
+     *        selected font.
      * \return The pixel coordinates of the bounding box of the passed text
-     *
-     * \pre \p text must not be empty
      */
-    glm::vec2 boundingBox(const char* text, ...);
+    glm::vec2 boundingBox(const std::string& text);
 
     /**
      * Returns the Glyph that representes the passed \p character. The first call to this

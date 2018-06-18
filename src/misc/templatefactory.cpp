@@ -29,8 +29,6 @@
 
 namespace ghoul {
 
-TemplateFactoryBase::~TemplateFactoryBase() {}
-
 TemplateFactoryBase::TemplateFactoryError::TemplateFactoryError(std::string msg)
     : RuntimeError(std::move(msg), "TemplateFactory")
 {}
@@ -45,5 +43,5 @@ TemplateFactoryBase::TemplateConstructionError::TemplateConstructionError(std::s
     : TemplateFactoryError(std::move(msg))
 {}
 
-}
+} // namespace ghoul
 

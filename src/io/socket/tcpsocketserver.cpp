@@ -25,6 +25,8 @@
 
 #include <ghoul/io/socket/tcpsocketserver.h>
 
+#include <ghoul/io/socket/tcpsocket.h>
+
 #include <cstring>
 
 #ifdef WIN32
@@ -120,12 +122,6 @@ namespace {
 
 namespace ghoul::io {
 
-TcpSocketServer::TcpSocketServer()
-    : _address("localhost")
-    , _port(0)
-    , _listening(false)
-{}
-
 TcpSocketServer::~TcpSocketServer() {
     if (_listening) {
         close();
@@ -165,7 +161,7 @@ void TcpSocketServer::listen(std::string address, int port) {
     _port = port;
 
     struct addrinfo* result = nullptr;
-    struct addrinfo hints;
+    struct addrinfo hints {};
 
     std::memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;
@@ -275,7 +271,7 @@ std::unique_ptr<Socket> TcpSocketServer::awaitPendingSocket() {
 
 void TcpSocketServer::waitForConnections() {
     while (_listening) {
-        sockaddr_in clientInfo;
+        sockaddr_in clientInfo {};
         std::memset(&clientInfo, 0, sizeof(clientInfo));
         _SOCKLEN clientInfoSize = sizeof(clientInfo);
 

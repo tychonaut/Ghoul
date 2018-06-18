@@ -25,11 +25,11 @@
 
 #include <ghoul/filesystem/filesystem.h>
 
+#include <ghoul/fmt.h>
 #include <ghoul/filesystem/cachemanager.h>
 #include <ghoul/filesystem/file.h>
 #include <ghoul/logging/logmanager.h>
 #include <algorithm>
-#include <ghoul/fmt.h>
 #include <regex>
 
 #ifdef WIN32
@@ -82,9 +82,7 @@ FileSystem::ResolveTokenException::ResolveTokenException(string t)
     , token(std::move(t))
 {}
 
-FileSystem::FileSystem()
-    : _cacheManager(nullptr)
-{
+FileSystem::FileSystem() {
     std::string temporaryPath;
 #ifdef WIN32
     std::vector<char> ptr;
@@ -137,7 +135,12 @@ string FileSystem::absolutePath(string path, const vector<string>& ignoredTokens
     std::vector<char> buffer(PathBufferSize);
 
 #ifdef WIN32
-    const DWORD success = GetFullPathName(path.c_str(), PathBufferSize, buffer.data(), 0);
+    const DWORD success = GetFullPathName(
+        path.c_str(),
+        PathBufferSize,
+        buffer.data(),
+        nullptr
+    );
     if (success == 0) {
         throw FileSystemException(fmt::format(
             "Error retrieving absolute path '{}'",
@@ -205,7 +208,7 @@ string FileSystem::relativePath(string path, const Directory& baseDirectory) con
             relativePath = "..";
         }
         else {
-            relativePath = ".." + (PathSeparator + relativePath);
+            relativePath = ".." + (PathSeparator + relativePath); // NOLINT
         }
         position = directoryRemainder.find(PathSeparator, position + 1);
     }
@@ -224,7 +227,7 @@ std::string FileSystem::convertPathSeparator(std::string path, char separator) c
 Directory FileSystem::currentDirectory() const {
 #ifdef WIN32
     // Get the size of the directory
-    DWORD size = GetCurrentDirectory(0, NULL);
+    DWORD size = GetCurrentDirectory(0, nullptr);
     std::vector<char> buffer(size);
     DWORD success = GetCurrentDirectory(size, buffer.data());
     if (success == 0) {
@@ -233,13 +236,13 @@ Directory FileSystem::currentDirectory() const {
         LPTSTR errorBuffer = nullptr;
         DWORD nValues = FormatMessage(
             FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER |
-                FORMAT_MESSAGE_IGNORE_INSERTS,
-            NULL,
+            FORMAT_MESSAGE_IGNORE_INSERTS,
+            nullptr,
             error,
             MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-            (LPTSTR)&errorBuffer,
+            (LPTSTR)&errorBuffer, // NOLINT
             0,
-            NULL
+            nullptr
         );
         if ((nValues > 0) && (errorBuffer != nullptr)) {
             string msg(errorBuffer);
@@ -275,12 +278,12 @@ void FileSystem::setCurrentDirectory(const Directory& directory) const {
         DWORD nValues = FormatMessage(
             FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER |
                 FORMAT_MESSAGE_IGNORE_INSERTS,
-            NULL,
+            nullptr,
             error,
             MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-            (LPTSTR)&errorBuffer,
+            (LPTSTR)&errorBuffer, // NOLINT
             0,
-            NULL
+            nullptr
         );
         if ((nValues > 0) && (errorBuffer != nullptr)) {
             string msg(errorBuffer);
@@ -316,12 +319,12 @@ bool FileSystem::fileExists(const File& path) const {
                 DWORD nValues = FormatMessage(
                     FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER |
                         FORMAT_MESSAGE_IGNORE_INSERTS,
-                    NULL,
+                    nullptr,
                     error,
                     MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                    (LPTSTR)&errorBuffer,
+                    (LPTSTR)&errorBuffer, // NOLINT
                     0,
-                    NULL
+                    nullptr
                 );
                 if ((nValues > 0) && (errorBuffer != nullptr)) {
                     string msg(errorBuffer);
@@ -333,8 +336,9 @@ bool FileSystem::fileExists(const File& path) const {
             }
             throw FileSystemException("Error retrieving file attributes");
         }
-        else
+        else {
             return (attributes & FILE_ATTRIBUTE_DIRECTORY) == 0;
+        }
     }
 #else
     struct stat buffer;
@@ -413,7 +417,7 @@ void FileSystem::createDirectory(const Directory& path, Recursive recursive) con
     }
     else {
 #ifdef WIN32
-        BOOL success = CreateDirectory(path.path().c_str(), NULL);
+        BOOL success = CreateDirectory(path.path().c_str(), nullptr);
         if (!success) {
             DWORD error = GetLastError();
             if (ERROR == ERROR_ALREADY_EXISTS) {
@@ -424,12 +428,12 @@ void FileSystem::createDirectory(const Directory& path, Recursive recursive) con
                 DWORD nValues = FormatMessage(
                     FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER |
                         FORMAT_MESSAGE_IGNORE_INSERTS,
-                    NULL,
+                    nullptr,
                     error,
                     MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                    (LPTSTR)&errorBuffer,
+                    (LPTSTR)&errorBuffer, // NOLINT
                     0,
-                    NULL
+                    nullptr
                 );
                 if ((nValues > 0) && (errorBuffer != nullptr)) {
                     string errorMsg(errorBuffer);
@@ -471,8 +475,9 @@ void FileSystem::deleteDirectory(const Directory& path, Recursive recursive) con
     HANDLE hFind = FindFirstFile(dirWildcard.c_str(), &FindFileData);
     do {
         const std::string p = FindFileData.cFileName;
-        if (p == "." || p == "..")
+        if (p == "." || p == "..") {
             continue;
+        }
 
         const std::string fullPath = dirPath + PathSeparator + p;
         if (FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
@@ -534,7 +539,7 @@ if (statResult == 0) {
     }
     else {
         int removeSuccess = remove(fullName.c_str());
-        if (removeSuccess != -1) {
+        if (removeSuccess != 0) {
             throw FileSystemException(fmt::format(
                 "Error deleting file '{}' in directory '{}': {}",
                 fullName, path.path(), strerror(errno)
@@ -609,11 +614,10 @@ void FileSystem::registerPathToken(string token, string path, Override override)
             _tokenMap.erase(it);
         }
     }
-    _tokenMap.emplace(token, path);
+    _tokenMap[std::move(token)] = std::move(path);
 }
 
-bool FileSystem::expandPathTokens(string& path,
-    const vector<string>& ignoredTokens) const
+bool FileSystem::expandPathTokens(string& path, const vector<string>& ignoredTokens) const
 {
     // TokenInformation = <token, beginning position, length>
     struct TokenInformation {
@@ -742,7 +746,7 @@ string FileSystem::cleanupPath(string path) const {
     // In Windows, replace all '/' by '\\' for conformity
     std::replace(path.begin(), path.end(), '/', '\\');
     std::string drivePart = path.substr(0, 3);
-    std::regex driveRegex = std::regex("([[:lower:]][\\:][\\\\])");
+    std::regex driveRegex = std::regex(R"(([[:lower:]][\:][\\]))");
     bool hasCorrectSize = path.size() >= 3;
     if (hasCorrectSize && std::regex_match(drivePart, driveRegex)) {
         std::transform(

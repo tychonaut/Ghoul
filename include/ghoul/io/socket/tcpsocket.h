@@ -28,6 +28,7 @@
 
 #include <ghoul/io/socket/socket.h>
 
+#include <ghoul/io/socket/sockettype.h>
 #include <ghoul/misc/exception.h>
 #include <array>
 #include <atomic>
@@ -37,24 +38,6 @@
 #include <thread>
 #include <unordered_map>
 #include <functional>
-
- // OS specific socket implementation normalization.
-#ifdef WIN32
-using _SOCKET = size_t;
-using _SOCKLEN = int;
-#else //linux & macOS
-
-#include <sys/socket.h>
-#include <sys/types.h>
-
-using _SOCKET = int;
-using _SOCKLEN = socklen_t;
-
-#ifndef INVALID_SOCKET
-#define INVALID_SOCKET (_SOCKET)(~0)
-#endif // INVALID_SOCKET
-
-#endif // WIN32
 
 struct addrinfo;
 
@@ -67,7 +50,7 @@ public:
     using InputInterceptor = std::function<void(const char* data, size_t nBytes)>;
 
     struct TcpSocketError : public RuntimeError {
-        explicit TcpSocketError(std::string message, std::string component = "");
+        explicit TcpSocketError(std::string msg, std::string comp = "");
     };
 
     TcpSocket(std::string address, int port);
@@ -79,12 +62,12 @@ public:
     bool isConnected() const override;
     bool isConnecting() const override;
 
-    virtual std::string address() const;
-    virtual int port() const;
+    std::string address() const override;
+    int port() const override;
 
     bool getMessage(std::string& message) override;
     bool putMessage(const std::string& message) override;
-    void setDelimiter(char delim);
+    void setDelimiter(char delimiter);
 
     static void initializeNetworkApi();
     static bool initializedNetworkApi();
@@ -159,13 +142,13 @@ private:
     std::mutex _inputQueueMutex;
     std::condition_variable _inputNotifier;
     std::deque<char> _inputQueue;
-    std::array<char, 4096> _inputBuffer;
+    std::array<char, 4096> _inputBuffer = { 0 };
 
     std::mutex _outputBufferMutex;
     std::mutex _outputQueueMutex;
     std::condition_variable _outputNotifier;
     std::deque<char> _outputQueue;
-    std::array<char, 4096> _outputBuffer;
+    std::array<char, 4096> _outputBuffer = { 0 };
 
     std::atomic<char> _delimiter;
 

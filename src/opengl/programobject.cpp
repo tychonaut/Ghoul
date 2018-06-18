@@ -242,9 +242,9 @@ const string& ProgramObject::name() const{
     return _programName;
 }
 
-void ProgramObject::setDictionary(const Dictionary& dict) {
-    for (const auto& shaderObject : _shaderObjects) {
-        shaderObject->setDictionary(dict);
+void ProgramObject::setDictionary(const Dictionary& dictionary) {
+    for (const std::shared_ptr<ShaderObject>& shaderObject : _shaderObjects) {
+        shaderObject->setDictionary(dictionary);
     }
 }
 
@@ -260,7 +260,7 @@ void ProgramObject::setProgramObjectCallback(ProgramObjectCallback changeCallbac
         _programIsDirty = true;
         changeCallback(this);
     };
-    for (const auto& shaderObject : _shaderObjects) {
+    for (const std::shared_ptr<ShaderObject>& shaderObject : _shaderObjects) {
         shaderObject->setShaderObjectCallback(c);
     }
 }
@@ -270,9 +270,7 @@ void ProgramObject::attachObject(std::shared_ptr<ShaderObject> shaderObject) {
     auto it = std::find(_shaderObjects.begin(), _shaderObjects.end(), shaderObject);
     ghoul_assert(it == _shaderObjects.end(), "ShaderObject was already registered");
 
-    shaderObject->setShaderObjectCallback([this]() {
-        _programIsDirty = true;
-    });
+    shaderObject->setShaderObjectCallback([this]() { _programIsDirty = true; });
 
     glAttachShader(_id, *shaderObject);
     _shaderObjects.push_back(shaderObject);
@@ -288,7 +286,7 @@ void ProgramObject::detachObject(std::shared_ptr<ShaderObject> shaderObject) {
 }
 
 void ProgramObject::compileShaderObjects() {
-    for (const auto& obj : _shaderObjects) {
+    for (const std::shared_ptr<ShaderObject>& obj : _shaderObjects) {
         obj->compile();
     }
 }
@@ -340,25 +338,31 @@ void ProgramObject::deactivate() {
 }
 
 std::unique_ptr<ProgramObject> ProgramObject::Build(const std::string& name,
-                                                    const std::string& vpath,
-                                                    const std::string& fpath,
+                                                    const std::string& vertexShaderPath,
+                                                    const std::string& fragmentShaderPath,
                                                     Dictionary dictionary)
 {
-    ghoul_assert(!vpath.empty(), "VertexShaderPath must not be empty");
-    ghoul_assert(FileSys.fileExists(vpath), "VertexShaderPath file must exist");
-    ghoul_assert(!fpath.empty(), "FragmentShaderPath must not be empty");
-    ghoul_assert(FileSys.fileExists(fpath), "FragmentShaderPath file must exist");
+    ghoul_assert(!vertexShaderPath.empty(), "VertexShaderPath must not be empty");
+    ghoul_assert(
+        FileSys.fileExists(vertexShaderPath),
+        "VertexShaderPath file must exist"
+    );
+    ghoul_assert(!fragmentShaderPath.empty(), "FragmentShaderPath must not be empty");
+    ghoul_assert(
+        FileSys.fileExists(fragmentShaderPath),
+        "FragmentShaderPath file must exist"
+    );
 
     std::unique_ptr<ProgramObject> program = std::make_unique<ProgramObject>(name);
     program->attachObject(std::make_unique<ShaderObject>(
         ShaderObject::ShaderType::Vertex,
-        vpath,
+        vertexShaderPath,
         name + " Vertex",
         dictionary
     ));
     program->attachObject(std::make_unique<ShaderObject>(
         ShaderObject::ShaderType::Fragment,
-        fpath,
+        fragmentShaderPath,
         name + " Fragment",
         dictionary
     ));
@@ -369,34 +373,43 @@ std::unique_ptr<ProgramObject> ProgramObject::Build(const std::string& name,
 }
 
 std::unique_ptr<ProgramObject> ProgramObject::Build(const std::string& name,
-                                                    const std::string& vpath,
-                                                    const std::string& fpath,
-                                                    const std::string& gpath,
+                                                    const std::string& vertexShaderPath,
+                                                    const std::string& fragmentShaderPath,
+                                                    const std::string& geometryShaderPath,
                                                     Dictionary dictionary)
 {
-    ghoul_assert(!vpath.empty(), "VertexShaderPath must not be empty");
-    ghoul_assert(FileSys.fileExists(vpath), "VertexShaderPath file must exist");
-    ghoul_assert(!fpath.empty(), "FragmentShaderPath must not be empty");
-    ghoul_assert(FileSys.fileExists(fpath), "FragmentShaderPath file must exist");
-    ghoul_assert(!gpath.empty(), "GeometryShaderPath must not be empty");
-    ghoul_assert(FileSys.fileExists(gpath), "GeometryShaderPath file must exist");
+    ghoul_assert(!vertexShaderPath.empty(), "VertexShaderPath must not be empty");
+    ghoul_assert(
+        FileSys.fileExists(vertexShaderPath),
+        "VertexShaderPath file must exist"
+    );
+    ghoul_assert(!fragmentShaderPath.empty(), "FragmentShaderPath must not be empty");
+    ghoul_assert(
+        FileSys.fileExists(fragmentShaderPath),
+        "FragmentShaderPath file must exist"
+    );
+    ghoul_assert(!geometryShaderPath.empty(), "GeometryShaderPath must not be empty");
+    ghoul_assert(
+        FileSys.fileExists(geometryShaderPath),
+        "GeometryShaderPath file must exist"
+    );
 
     std::unique_ptr<ProgramObject> program = std::make_unique<ProgramObject>(name);
     program->attachObject(std::make_unique<ShaderObject>(
         ShaderObject::ShaderType::Vertex,
-        vpath,
+        vertexShaderPath,
         name + " Vertex",
         dictionary
     ));
     program->attachObject(std::make_unique<ShaderObject>(
         ShaderObject::ShaderType::Geometry,
-        gpath,
+        geometryShaderPath,
         name + " Geometry",
         dictionary
     ));
     program->attachObject(std::make_unique<ShaderObject>(
         ShaderObject::ShaderType::Fragment,
-        fpath,
+        fragmentShaderPath,
         name + " Fragment",
         dictionary
     ));
@@ -407,58 +420,73 @@ std::unique_ptr<ProgramObject> ProgramObject::Build(const std::string& name,
 }
 
 std::unique_ptr<ProgramObject> ProgramObject::Build(const std::string& name,
-                                                    const std::string& vpath,
-                                                    const std::string& fpath,
-                                                    const std::string& gpath,
-                                                    const std::string& tepath,
-                                                    const std::string& tcpath,
+                                                    const std::string& vertexShaderPath,
+                                                    const std::string& fragmentShaderPath,
+                                                    const std::string& geometryShaderPath,
+                                      const std::string& tessellationEvaluationShaderPath,
+                                         const std::string& tessellationControlShaderPath,
                                                     Dictionary dictionary)
 {
-    ghoul_assert(!vpath.empty(), "VertexShaderPath must not be empty");
-    ghoul_assert(FileSys.fileExists(vpath), "VertexShaderPath file must exist");
-    ghoul_assert(!fpath.empty(), "FragmentShaderPath must not be empty");
-    ghoul_assert(FileSys.fileExists(fpath), "FragmentShaderPath file must exist");
-    ghoul_assert(!gpath.empty(), "GeometryShaderPath must not be empty");
-    ghoul_assert(FileSys.fileExists(gpath), "GeometryShaderPath file must exist");
-    ghoul_assert(!tepath.empty(), "Tessellation evaluation shader must not be empty");
+    ghoul_assert(!vertexShaderPath.empty(), "VertexShaderPath must not be empty");
     ghoul_assert(
-        FileSys.fileExists(tepath),
+        FileSys.fileExists(vertexShaderPath),
+        "VertexShaderPath file must exist"
+    );
+    ghoul_assert(!fragmentShaderPath.empty(), "FragmentShaderPath must not be empty");
+    ghoul_assert(
+        FileSys.fileExists(fragmentShaderPath),
+        "FragmentShaderPath file must exist"
+    );
+    ghoul_assert(!geometryShaderPath.empty(), "GeometryShaderPath must not be empty");
+    ghoul_assert(
+        FileSys.fileExists(geometryShaderPath),
+        "GeometryShaderPath file must exist"
+    );
+    ghoul_assert(
+        !tessellationEvaluationShaderPath.empty(),
+        "Tessellation evaluation shader must not be empty"
+    );
+    ghoul_assert(
+        FileSys.fileExists(tessellationEvaluationShaderPath),
         "Tessellation evaluation shader file must exist"
     );
-    ghoul_assert(!tcpath.empty(), "Tessellation control shader must not be empty");
     ghoul_assert(
-        FileSys.fileExists(tcpath),
+        !tessellationControlShaderPath.empty(),
+        "Tessellation control shader must not be empty"
+    );
+    ghoul_assert(
+        FileSys.fileExists(tessellationControlShaderPath),
         "Tessellation control shader file must exist"
     );
 
     std::unique_ptr<ProgramObject> program = std::make_unique<ProgramObject>(name);
     program->attachObject(std::make_unique<ShaderObject>(
         ShaderObject::ShaderType::Vertex,
-        vpath,
+        vertexShaderPath,
         name + " Vertex",
         dictionary
     ));
     program->attachObject(std::make_unique<ShaderObject>(
         ShaderObject::ShaderType::Geometry,
-        gpath,
+        geometryShaderPath,
         name + " Geometry",
         dictionary
     ));
     program->attachObject(std::make_unique<ShaderObject>(
         ShaderObject::ShaderType::TesselationEvaluation,
-        tepath,
+        tessellationEvaluationShaderPath,
         name + " Tessellation Evaluation",
         dictionary
     ));
     program->attachObject(std::make_unique<ShaderObject>(
         ShaderObject::ShaderType::TesselationControl,
-        tcpath,
+        tessellationControlShaderPath,
         name + " Tessellation Control",
         dictionary
     ));
     program->attachObject(std::make_unique<ShaderObject>(
         ShaderObject::ShaderType::Fragment,
-        fpath,
+        fragmentShaderPath,
         name + " Fragment",
         dictionary
     ));
@@ -3784,7 +3812,7 @@ GLint ProgramObject::subroutineUniformLocation(ShaderObject::ShaderType shaderTy
 }
 
 vector<string> ProgramObject::activeSubroutineUniformNames(
-                                                    ShaderObject::ShaderType shaderType)
+                                                      ShaderObject::ShaderType shaderType)
 {
     GLint maximumUniformNameLength;
     glGetProgramStageiv(
@@ -3872,8 +3900,8 @@ vector<string> ProgramObject::compatibleSubroutineNames(
 }
 
 vector<string> ProgramObject::compatibleSubroutineNames(
-                                                ShaderObject::ShaderType shaderType,
-                                                const std::string& subroutineUniformName)
+                                                      ShaderObject::ShaderType shaderType,
+                                                 const std::string& subroutineUniformName)
 {
     ghoul_assert(!subroutineUniformName.empty(), "Name must not be empty");
 
@@ -3887,9 +3915,9 @@ vector<string> ProgramObject::compatibleSubroutineNames(
 }
 
 bool ProgramObject::setUniformSubroutines(ShaderObject::ShaderType shaderType,
-                                          const std::vector<GLuint>& values)
+                                          const std::vector<GLuint>& indices)
 {
-    ghoul_assert(!values.empty(), "Values must not be empty");
+    ghoul_assert(!indices.empty(), "Values must not be empty");
 
 #ifdef GHL_DEBUG
     int countActiveSubroutineUniforms;
@@ -3899,19 +3927,20 @@ bool ProgramObject::setUniformSubroutines(ShaderObject::ShaderType shaderType,
         GL_ACTIVE_SUBROUTINE_UNIFORMS,
         &countActiveSubroutineUniforms
     );
-    if (static_cast<size_t>(countActiveSubroutineUniforms) != values.size()) {
+    if (static_cast<size_t>(countActiveSubroutineUniforms) != indices.size()) {
         LWARNING(fmt::format(
             "Number of active subroutine uniforms ({}) is different from passed uniform "
             "subroutine indices ({})",
             countActiveSubroutineUniforms,
-            values.size()
+            indices.size()
         ));
         return false;
     }
 #endif
     glUniformSubroutinesuiv(
         static_cast<GLenum>(shaderType),
-        static_cast<GLsizei>(values.size()), &values[0]
+        static_cast<GLsizei>(indices.size()),
+        indices.data()
     );
     return true;
 }
