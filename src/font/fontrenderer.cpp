@@ -42,6 +42,10 @@
 namespace {
     constexpr const char* _loggerCat = "FontRenderer";
 
+    constexpr const std::array<const char*, 5> UniformNames = {
+        "baseColor", "outlineColor", "tex", "hasOutline", "projection"
+    };
+
     constexpr const char* DefaultVertexShaderPath =
         "${TEMPORARY}/defaultfontrenderer_vs.glsl";
     constexpr const char* DefaultFragmentShaderPath =
@@ -209,11 +213,7 @@ std::unique_ptr<FontRenderer> FontRenderer::createDefault() {
     FontRenderer* fr = new FontRenderer;
     fr->_program = std::move(program);
 
-    fr->_uniformCache.baseColor = fr->_program->uniformLocation("baseColor");
-    fr->_uniformCache.outlineColor = fr->_program->uniformLocation("outlineColor");
-    fr->_uniformCache.texture = fr->_program->uniformLocation("tex");
-    fr->_uniformCache.hasOutline = fr->_program->uniformLocation("hasOutline");
-    fr->_uniformCache.projection = fr->_program->uniformLocation("projection");
+    ghoul::opengl::updateUniformLocations(*fr->_program, fr->_uniformCache, UniformNames);
 
     return std::unique_ptr<FontRenderer>(fr);
 }
@@ -251,12 +251,8 @@ std::unique_ptr<FontRenderer> FontRenderer::createProjectionSubjectText() {
     FontRenderer* fr = new FontRenderer;
     fr->_program = std::move(prog);
 
-    fr->_uniformCache.baseColor = fr->_program->uniformLocation("baseColor");
-    fr->_uniformCache.outlineColor = fr->_program->uniformLocation("outlineColor");
-    fr->_uniformCache.texture = fr->_program->uniformLocation("tex");
-    fr->_uniformCache.hasOutline = fr->_program->uniformLocation("hasOutline");
-    fr->_uniformCache.mvpMatrix = fr->_program->uniformLocation("mvpMatrix");
-    //fr->_uniformCache.textMinSize = fr->_program->uniformLocation("textMinSize");
+    ghoul::opengl::updateUniformLocations(*fr->_program, fr->_uniformCache, UniformNames);
+    fr->_uniformMvp = fr->_program->uniformLocation("mvpMatrix");
 
     return std::unique_ptr<FontRenderer>(fr);
 }
@@ -544,7 +540,7 @@ FontRenderer::BoundingBoxInformation FontRenderer::render(Font& font,
     glm::vec2 movingPos(0.f);
 
     glm::vec2 size = glm::vec2(0.f);
-    float heightInPixels = 0.0f;
+    float heightInPixels = 0.f;
 
     glm::dvec3 normal(0.0);
     glm::vec3 newRight(0.f);
@@ -648,7 +644,7 @@ FontRenderer::BoundingBoxInformation FontRenderer::render(Font& font,
             bottomLeft.y = bottomLeft.y > _framebufferSize.y ? _framebufferSize.y : bottomLeft.y;
 
             heightInPixels =
-                heightInPixels == 0.0f ?
+                std::equal_to<>()(heightInPixels, 0.0) ?
                 glm::length(topLeft - bottomLeft) :
                 heightInPixels;
 
@@ -726,7 +722,7 @@ FontRenderer::BoundingBoxInformation FontRenderer::render(Font& font,
     _program->setUniform(_uniformCache.outlineColor, outlineColor);
     _program->setUniform(_uniformCache.texture, atlasUnit);
     _program->setUniform(_uniformCache.hasOutline, font.hasOutline());
-    _program->setUniform(_uniformCache.mvpMatrix, mvpMatrix);
+    _program->setUniform(_uniformMvp, mvpMatrix);
     //_program->setUniform(_uniformCache.textMinSize, textMinSize);
 
     glBindVertexArray(_vao);
