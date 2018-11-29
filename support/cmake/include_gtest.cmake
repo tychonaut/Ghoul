@@ -22,63 +22,19 @@
 # OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                                          #
 ##########################################################################################
 
-function(disable_external_warnings library_name)
-    if (MSVC)
-        target_compile_options(${library_name} PRIVATE "/W0")
-        target_compile_definitions(${library_name} PRIVATE "_SCL_SECURE_NO_WARNINGS")
-    else ()
-        target_compile_options(${library_name} PRIVATE "-w")
-    endif ()
-endfunction ()
-
-
-function(disable_external_warnings_for_file file_name)
-    if (MSVC)
-        set_source_files_properties(
-            ${file_name}
-            PROPERTIES COMPILE_FLAGS "/W0"
-        )
-
-        set_source_files_properties(
-            ${file_name}
-            PROPERTIES COMPILE_DEFINITIONS "_SCL_SECURE_NO_WARNINGS"
-        )
-    else ()
-        set_source_files_properties(
-            ${file_name}
-            PROPERTIES COMPILE_FLAGS "-w"
-        )
-    endif ()
-endfunction ()
-
-function (set_folder_location target folder)
-    if (TARGET ${target})
-        set_property(TARGET ${target} PROPERTY FOLDER ${folder})
-    endif ()
-endfunction ()
-
-# Includes an external library by adding its subdirectory using 'add_subdirectory'
-# target_name: Target to which the library is added
-# library_name: The library that is added by including 'path'
-# path: The path that will be included
-function (include_external_library target_name library_name path)
-    set (extra_macro_args ${ARGN})
-    if (NOT TARGET ${library_name})
+function (include_gtest path)
+    if (NOT TARGET gtest)
+        set(BUILD_GTEST ON CACHE BOOL "")
+        set(BUILD_GMOCK OFF CACHE BOOL "")
+        set(gtest_force_shared_crt ON CACHE BOOL "")
         add_subdirectory(${path})
-        get_property(INCLUDE_DIR TARGET ${target_name} PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
-        target_link_libraries(${target_name} ${library_name})
-        target_include_directories(${target_name} SYSTEM PUBLIC ${INCLUDE_DIR} ${extra_macro_args})
-        set_folder_location(${library_name} "External")
-        if (MSVC)
-            target_compile_options(
-                ${library_name}
-                PUBLIC
-                "/MP"
-                "/bigobj"
-            )
-        endif ()
-        if (GHOUL_DISABLE_EXTERNAL_WARNINGS)
-            disable_external_warnings(${library_name})
-        endif ()
+
+        mark_as_advanced(BUILD_GMOCK BUILD_GTEST INSTALL_GTEST)
+
+        target_compile_definitions(gtest PUBLIC "_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING")
+
+        set_folder_location(gtest_main "External")
+        set_folder_location(gtest "External")
     endif ()
 endfunction ()
+

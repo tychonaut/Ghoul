@@ -23,41 +23,30 @@
  * OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                                         *
  ****************************************************************************************/
 
-#include <iostream>
-#include <sstream>
+#ifndef __GHOUL___PROCESS___H__
+#define __GHOUL___PROCESS___H__
 
-inline void log(ghoul::logging::LogLevel level, const std::string& category,
-                const std::string& message)
-{
-    if (ghoul::logging::LogManager::isInitialized()) {
-        LogMgr.logMessage(level, category, message);
-    }
-    else {
-        std::cout << category << " (" <<
-            ghoul::to_string(level) << ") : " << message << std::endl;
-    }
-}
+#include <string>
+#include <functional>
 
-inline void LTRACEC(const std::string& category, const std::string& message) {
-    log(ghoul::logging::LogLevel::Trace, category, message);
-}
+#include <process.hpp>
 
-inline void LDEBUGC(const std::string& category, const std::string& message) {
-    log(ghoul::logging::LogLevel::Debug, category, message);
-}
+namespace ghoul {
 
-inline void LINFOC(const std::string& category, const std::string& message) {
-    log(ghoul::logging::LogLevel::Info, category, message);
-}
+class Process {
+public:
+    Process(const std::string& command, const std::string& path,
+        std::function<void(const char* bytes, size_t n)> readStdout = nullptr,
+        std::function<void(const char* bytes, size_t n)> readStderr = nullptr,
+        bool openStdin = false, size_t bufferSize = 131072);
+    ~Process();
 
-inline void LWARNINGC(const std::string& category, const std::string& message) {
-    log(ghoul::logging::LogLevel::Warning, category, message);
-}
+    void kill();
 
-inline void LERRORC(const std::string& category, const std::string& message) {
-    log(ghoul::logging::LogLevel::Error, category, message);
-}
+private:
+    std::unique_ptr<TinyProcessLib::Process> _process;
+};
 
-inline void LFATALC(const std::string& category, const std::string& message) {
-    log(ghoul::logging::LogLevel::Fatal, category, message);
-}
+} // namespace ghoul
+
+#endif // __GHOUL___PROCESS___H__

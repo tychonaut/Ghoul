@@ -33,31 +33,58 @@
 
 namespace {
 
-std::string formatDouble(double d) {
-    // This check is to silence -Wfloat-equal on GCC due to floating point comparison
-    if (std::equal_to<>()(d, 0.0)) {
-        return "0";
+    std::string formatDouble(double d) {
+        // This check is to silence -Wfloat-equal on GCC due to floating point comparison
+        if (std::equal_to<>()(d, 0.0)) {
+            return "0";
+        }
+        const int exponent = static_cast<int>(std::log10(std::abs(d)));
+        const double base = d / std::pow(10, exponent);
+        return std::to_string(base) + "E" + std::to_string(exponent);
     }
-    int exponent = static_cast<int>(std::log10(std::abs(d)));
-    double base = d / std::pow(10, exponent);
-    return std::to_string(base) + "E" + std::to_string(exponent);
-}
 
 }  // namespace
 
 namespace ghoul {
+
+DictionaryLuaFormatter::DictionaryLuaFormatter(PrettyPrint prettyPrint,
+                                               std::string indentation)
+    : _prettyPrint(prettyPrint)
+    , _indentation(std::move(indentation))
+{}
+
 
 DictionaryLuaFormatter::LuaFormattingError::LuaFormattingError(const std::string& msg)
     : RuntimeError(msg, "Dictionary")
 {}
 
 std::string DictionaryLuaFormatter::format(const Dictionary& dictionary) const {
+    return format(dictionary, 0);
+}
+
+std::string DictionaryLuaFormatter::format(const Dictionary& dictionary,
+                                           int indentationSteps) const
+{
     if (dictionary.empty()) {
         return "{}";
     }
 
-    auto convert = [this, dictionary](const std::string& key) -> std::string {
-        return key + "=" + formatValue(dictionary, key);
+    std::string indent;
+    if (_prettyPrint) {
+        for (int i = 0; i < indentationSteps; i++) {
+            indent += _indentation;
+        }
+    }
+
+    std::string newLine = _prettyPrint ? "\n" : "";
+
+    auto convert = [this, dictionary, indentationSteps]
+        (const std::string& key)
+    {
+        return
+            (_prettyPrint ? _indentation : "") + key +
+            (_prettyPrint ? " " : "") + "=" + (_prettyPrint ? " " : "") +
+            formatValue(dictionary, key, indentationSteps + 1);
     };
 
     std::vector<std::string> keys = dictionary.keys();
@@ -66,40 +93,45 @@ std::string DictionaryLuaFormatter::format(const Dictionary& dictionary) const {
         std::next(keys.begin()),
         keys.end(),
         convert(*keys.begin()),
-        [convert](std::string a, std::string key) {
-            return a + "," + convert(key);
+        [convert, indent, this](std::string a, std::string key) {
+            return a + "," + (_prettyPrint ? "\n" : "") + indent + convert(key);
         }
     );
 
-    return "{" + lua + "}";
+    return std::string("{") + (_prettyPrint ? "\n" : "") +
+        indent + lua + (_prettyPrint ? "\n" : "") +
+        indent + "}";
 }
 
 std::string DictionaryLuaFormatter::formatValue(const Dictionary& dictionary,
-                                                 const std::string& key) const
+                                                 const std::string& key,
+                                                 int indentationSteps) const
 {
+    const char* whitespace = _prettyPrint ? " " : "";
+
     if (dictionary.hasValue<Dictionary>(key)) {
         Dictionary subDictionary = dictionary.value<Dictionary>(key);
-        return format(subDictionary);
+        return format(subDictionary, indentationSteps);
     }
 
     if (dictionary.hasValue<glm::dvec4>(key)) {
         glm::dvec4 vec = dictionary.value<glm::dvec4>(key);
         return "{" + formatDouble(vec.x) + "," +
-            formatDouble(vec.y) + "," +
-            formatDouble(vec.z) + "," +
+            formatDouble(vec.y) + "," + whitespace +
+            formatDouble(vec.z) + "," + whitespace +
             formatDouble(vec.w) + "}";
     }
 
     if (dictionary.hasValue<glm::dvec3>(key)) {
         glm::dvec3 vec = dictionary.value<glm::dvec3>(key);
-        return "{" + formatDouble(vec.x) + "," +
-            formatDouble(vec.y) + "," +
+        return "{" + formatDouble(vec.x) + "," + whitespace +
+            formatDouble(vec.y) + "," + whitespace +
             formatDouble(vec.z) + "}";
     }
 
     if (dictionary.hasValue<glm::dvec2>(key)) {
         glm::dvec2 vec = dictionary.value<glm::dvec2>(key);
-        return "{" + formatDouble(vec.x) + "," +
+        return "{" + formatDouble(vec.x) + "," + whitespace +
             formatDouble(vec.y) + "}";
     }
 
@@ -119,29 +151,29 @@ std::string DictionaryLuaFormatter::formatValue(const Dictionary& dictionary,
         std::string luaString;
         for (const char& c : value) {
             switch (c) {
-            case '"':
-                luaString += "\\\"";
-                break;
-            case '\\':
-                luaString += "\\\\";
-                break;
-            case '\b':
-                luaString += "\\b";
-                break;
-            case '\f':
-                luaString += "\\f";
-                break;
-            case '\n':
-                luaString += "\\n";
-                break;
-            case '\r':
-                luaString += "\\r";
-                break;
-            case '\t':
-                luaString += "\\t";
-                break;
-            default:
-                luaString += c;
+                case '"':
+                    luaString += "\\\"";
+                    break;
+                case '\\':
+                    luaString += "\\\\";
+                    break;
+                case '\b':
+                    luaString += "\\b";
+                    break;
+                case '\f':
+                    luaString += "\\f";
+                    break;
+                case '\n':
+                    luaString += "\\n";
+                    break;
+                case '\r':
+                    luaString += "\\r";
+                    break;
+                case '\t':
+                    luaString += "\\t";
+                    break;
+                default:
+                    luaString += c;
             }
         }
 

@@ -118,7 +118,7 @@ void Directory::internalReadFiles(vector<string>& result, const string& path,
     std::stack<string> directories;
 #ifdef WIN32
     WIN32_FIND_DATA findFileData = {0};
-    const string& directory = path + "\\*";
+    string directory = path + "\\*";
 
     HANDLE findHandle = FindFirstFile(directory.c_str(), &findFileData);
     if (findHandle != INVALID_HANDLE_VALUE) { // NOLINT
@@ -128,7 +128,7 @@ void Directory::internalReadFiles(vector<string>& result, const string& path,
             if (!isDir) {
                 result.push_back(path + "\\" + file);
             }
-            if (recursiveSearch && isDir && file != "." && file != "..") {
+            if (recursiveSearch && isDir && (file != ".") && (file != "..")) {
                 directories.push(path + "\\" + file);
             }
         } while (FindNextFile(findHandle, &findFileData) != 0);

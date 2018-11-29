@@ -73,15 +73,14 @@ namespace {
 namespace ghoul::io {
 
 std::unique_ptr<opengl::VertexBufferObject> ModelReaderMultiFormat::loadModel(
-    const std::string& filename) const
+                                                        const std::string& filename) const
 {
     std::vector<Vertex> vertices;
     std::vector<int> indices;
 
     loadModel(filename, vertices, indices);
 
-    std::unique_ptr<opengl::VertexBufferObject> vbo =
-        std::make_unique<opengl::VertexBufferObject>();
+    auto vbo = std::make_unique<opengl::VertexBufferObject>();
     vbo->initialize(vertices, indices);
     vbo->vertexAttribPointer(
         0,
@@ -107,10 +106,9 @@ std::unique_ptr<opengl::VertexBufferObject> ModelReaderMultiFormat::loadModel(
     return vbo;
 }
 
-void ModelReaderMultiFormat::loadModel(
-    const std::string& filename,
-    std::vector<Vertex> & vertexArray,
-    std::vector<int> & indexArray) const
+void ModelReaderMultiFormat::loadModel(const std::string& filename,
+                                       std::vector<Vertex> & vertexArray,
+                                       std::vector<int> & indexArray) const
 {
     ghoul_assert(!filename.empty(), "Filename must not be empty");
 
@@ -124,24 +122,15 @@ void ModelReaderMultiFormat::loadModel(
         aiProcess_JoinIdenticalVertices);
 
     if (!scene) {
-        throw ModelReaderException(
-            filename,
-            importer.GetErrorString()
-        );
+        throw ModelReaderException(filename, importer.GetErrorString());
     }
 
     // Get info from all models in the scene
     size_t totalSizeIndex = 0;
     size_t totalSizeVertex = 0;
-    std::vector< const struct aiMesh *> meshArray;
+    std::vector<const struct aiMesh *> meshArray;
 
-    getMeshesInScene(
-        totalSizeIndex,
-        totalSizeVertex,
-        meshArray,
-        scene->mRootNode,
-        scene
-    );
+    getMeshesInScene(totalSizeIndex, totalSizeVertex, meshArray, scene->mRootNode, scene);
 
     vertexArray.reserve(totalSizeVertex);
     indexArray.reserve(totalSizeIndex);
@@ -162,10 +151,17 @@ void ModelReaderMultiFormat::loadModel(
             vTmp.location[1] = meshPtr->mVertices[i].y;
             vTmp.location[2] = meshPtr->mVertices[i].z;
 
-            // Normals
-            vTmp.normal[0] = meshPtr->mNormals[i].x;
-            vTmp.normal[1] = meshPtr->mNormals[i].y;
-            vTmp.normal[2] = meshPtr->mNormals[i].z;
+
+            if (meshPtr->mNormals) {
+                // Normals
+                vTmp.normal[0] = meshPtr->mNormals[i].x;
+                vTmp.normal[1] = meshPtr->mNormals[i].y;
+                vTmp.normal[2] = meshPtr->mNormals[i].z;
+            } else {
+                vTmp.normal[0] = 0;
+                vTmp.normal[1] = 0;
+                vTmp.normal[2] = 0;
+            }
 
             // Texture Coordinates
             if (meshPtr->mTextureCoords[0]) {

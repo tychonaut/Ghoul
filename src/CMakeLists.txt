@@ -64,6 +64,7 @@ set(GHOUL_SOURCE
     ${PROJECT_SOURCE_DIR}/src/misc/templatefactory.cpp
     ${PROJECT_SOURCE_DIR}/src/misc/thread.cpp
     ${PROJECT_SOURCE_DIR}/src/misc/threadpool.cpp
+    ${PROJECT_SOURCE_DIR}/src/misc/process.cpp
     ${PROJECT_SOURCE_DIR}/src/ghoul.cpp
 )
 
@@ -144,7 +145,6 @@ if (GHOUL_MODULE_SYSTEMCAPABILITIES)
 endif ()
 
 set(GHOUL_HEADER 
-    ${PROJECT_SOURCE_DIR}/include/ghoul/designpattern/singleton.h
     ${PROJECT_SOURCE_DIR}/include/ghoul/designpattern/event.h
     ${PROJECT_SOURCE_DIR}/include/ghoul/designpattern/event.inl
     ${PROJECT_SOURCE_DIR}/include/ghoul/filesystem/cachemanager.h
@@ -196,6 +196,8 @@ set(GHOUL_HEADER
     ${PROJECT_SOURCE_DIR}/include/ghoul/misc/interpolator.h
     ${PROJECT_SOURCE_DIR}/include/ghoul/misc/interpolator.inl
     ${PROJECT_SOURCE_DIR}/include/ghoul/misc/invariants.h
+    ${PROJECT_SOURCE_DIR}/include/ghoul/misc/memorypool.h
+    ${PROJECT_SOURCE_DIR}/include/ghoul/misc/memorypool.inl
     ${PROJECT_SOURCE_DIR}/include/ghoul/misc/misc.h
     ${PROJECT_SOURCE_DIR}/include/ghoul/misc/objectmanager.h
     ${PROJECT_SOURCE_DIR}/include/ghoul/misc/objectmanager.inl
@@ -208,6 +210,7 @@ set(GHOUL_HEADER
     ${PROJECT_SOURCE_DIR}/include/ghoul/misc/thread.h
     ${PROJECT_SOURCE_DIR}/include/ghoul/misc/threadpool.h
     ${PROJECT_SOURCE_DIR}/include/ghoul/misc/threadpool.inl
+    ${PROJECT_SOURCE_DIR}/include/ghoul/misc/process.h
     ${PROJECT_SOURCE_DIR}/include/ghoul/ghoul.h
 )
 
@@ -299,26 +302,5 @@ if (GHOUL_MODULE_SYSTEMCAPABILITIES)
     )
 endif ()
 
-
 include (${GHOUL_CMAKE_DIR}/GroupFilesIntoFolders.cmake)
 group_files_into_folders(${GHOUL_SOURCE} ${GHOUL_HEADER})
-
-
-# if (MSVC)
-#     set(GHOUL_SOURCE
-#         ${GHOUL_SOURCE}
-#         ${PROJECT_SOURCE_DIR}/ext/stackwalker/StackWalker.cpp
-#     )
-
-#     set(GHOUL_HEADER
-#         ${GHOUL_HEADER}
-#         ${PROJECT_SOURCE_DIR}/ext/stackwalker/StackWalker.h
-#     )
-
-#     source_group(
-#         "External"
-#         FILES
-#         ${PROJECT_SOURCE_DIR}/ext/stackwalker/StackWalker.cpp
-#         ${PROJECT_SOURCE_DIR}/ext/stackwalker/StackWalker.h
-#     )
-# endif ()

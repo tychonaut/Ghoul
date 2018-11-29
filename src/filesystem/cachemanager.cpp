@@ -25,11 +25,12 @@
 
 #include <ghoul/filesystem/cachemanager.h>
 
+#include <ghoul/fmt.h>
 #include <ghoul/filesystem/file.h>
 #include <ghoul/filesystem/filesystem.h>
 #include <ghoul/logging/logmanager.h>
+#include <ghoul/misc/assert.h>
 #include <ghoul/misc/crc32.h>
-#include <ghoul/fmt.h>
 #include <algorithm>
 #include <fstream>
 
@@ -92,8 +93,7 @@ CacheManager::CacheManager(std::string directory, int version)
         if (line != std::to_string(_version)) {
             LINFO(fmt::format(
                 "Cache version has changed. Current version {}; new version {}",
-                line,
-                _version
+                line, _version
             ));
             for (const LoadedCacheInfo& cache : cacheState) {
                 LINFO(fmt::format("Deleting file '{}'", cache.second));
@@ -183,8 +183,7 @@ CacheManager::~CacheManager() {
     }
     else {
         LERROR(fmt::format(
-            "Could not open file '{}' for writing parmanent cache files",
-            path
+            "Could not open file '{}' for writing parmanent cache files", path
         ));
     }
     cleanDirectory(_directory);
@@ -246,10 +245,7 @@ std::string CacheManager::cachedFilename(const std::string& baseName,
     std::string cachedFileName = FileSys.pathByAppendingComponent(destination, baseName);
 
     // Store the cache information in the map
-    CacheInformation info = {
-        cachedFileName,
-        isPersistent
-    };
+    CacheInformation info = { cachedFileName, isPersistent };
     _files[hash] = info;
     return cachedFileName;
 }
@@ -351,8 +347,7 @@ std::vector<CacheManager::LoadedCacheInfo> CacheManager::cacheInformationFromDir
             // same name as the directory
             if (files.size() > 1) {
                 throw ErrorLoadingCacheException(fmt::format(
-                    "Directory '{}' contained more than one file",
-                    hash
+                    "Directory '{}' contained more than one file", hash
                 ));
             }
             if (files.size() == 1) {
@@ -363,9 +358,7 @@ std::vector<CacheManager::LoadedCacheInfo> CacheManager::cacheInformationFromDir
                     throw ErrorLoadingCacheException(fmt::format(
                         "File contained in cache directory '{}' contains a file with "
                         "name '{}' instead of expected '{}'",
-                        hash,
-                        filename,
-                        directoryName
+                        hash, filename, directoryName
                     ));
                 }
 

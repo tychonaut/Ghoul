@@ -119,9 +119,10 @@ T value(lua_State* L, int location) {
     }
 
     std::string error = fmt::format(
-        "Requested type {} was not the expected type {}",
+        "Requested type {} for parameter {} was not the expected type {}",
         typeid(T).name(),
-        luaTypeToString(lua_type(L, -1))
+        location,
+        luaTypeToString(lua_type(L, location))
     );
 
     ghoul_assert(false, error);

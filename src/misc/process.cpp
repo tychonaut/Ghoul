@@ -23,41 +23,35 @@
  * OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                                         *
  ****************************************************************************************/
 
-#include <iostream>
-#include <sstream>
+#include <ghoul/misc/process.h>
 
-inline void log(ghoul::logging::LogLevel level, const std::string& category,
-                const std::string& message)
+namespace ghoul {
+
+Process::Process(const std::string& command, const std::string& path,
+                 std::function<void(const char *bytes, size_t n)> readStdout,
+                 std::function<void(const char *bytes, size_t n)> readStderr,
+                 bool openStdin, size_t bufferSize)
 {
-    if (ghoul::logging::LogManager::isInitialized()) {
-        LogMgr.logMessage(level, category, message);
+    _process = std::make_unique<TinyProcessLib::Process>(
+        command,
+        path,
+        readStdout,
+        readStderr,
+        openStdin,
+        bufferSize
+    );
+}
+
+void Process::kill() {
+    if (!_process) {
+        return;
     }
-    else {
-        std::cout << category << " (" <<
-            ghoul::to_string(level) << ") : " << message << std::endl;
-    }
+    _process->kill();
+    _process = nullptr;
 }
 
-inline void LTRACEC(const std::string& category, const std::string& message) {
-    log(ghoul::logging::LogLevel::Trace, category, message);
+Process::~Process() {
+    kill();
 }
 
-inline void LDEBUGC(const std::string& category, const std::string& message) {
-    log(ghoul::logging::LogLevel::Debug, category, message);
-}
-
-inline void LINFOC(const std::string& category, const std::string& message) {
-    log(ghoul::logging::LogLevel::Info, category, message);
-}
-
-inline void LWARNINGC(const std::string& category, const std::string& message) {
-    log(ghoul::logging::LogLevel::Warning, category, message);
-}
-
-inline void LERRORC(const std::string& category, const std::string& message) {
-    log(ghoul::logging::LogLevel::Error, category, message);
-}
-
-inline void LFATALC(const std::string& category, const std::string& message) {
-    log(ghoul::logging::LogLevel::Fatal, category, message);
-}
+} // namespace ghoul
