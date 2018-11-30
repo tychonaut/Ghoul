@@ -295,8 +295,8 @@ FontRenderer& FontRenderer::defaultProjectionRenderer() {
     return *_defaultProjectionRenderer;
 }
 
-FontRenderer::BoundingBoxInformation FontRenderer::boundingBox(Font& font,
-                                                            const std::string& text) const
+FontRenderer::BoundingBoxInformation FontRenderer::boundingBox(
+    Font& font, const std::string& text) const
 {
     const std::vector<std::string>& lines = ghoul::tokenizeString(text, '\n');
 
@@ -350,7 +350,7 @@ FontRenderer::BoundingBoxInformation FontRenderer::render(Font& font,
                                                           const glm::vec2& pos,
                                                           const std::string& text,
                                                           const glm::vec4& color,
-                                                      const glm::vec4& outlineColor) const
+                                                          const glm::vec4& outlineColor) const
 {
     const std::vector<std::string>& lines = ghoul::tokenizeString(text, '\n');
 
@@ -522,11 +522,11 @@ FontRenderer::BoundingBoxInformation FontRenderer::render(Font& font,
                                                           int textMinSize,
                                                           int textMaxSize,
                                                           const glm::dmat4& mvpMatrix,
-                                                        const glm::vec3& orthonormalRight,
-                                                         const glm::vec3& orthonormalUp,
-                                                         const glm::dvec3& cameraPos,
-                                                         const glm::dvec3& cameraLookUp,
-                                                         int renderType) const
+                                                          const glm::vec3& orthonormalRight,
+                                                          const glm::vec3& orthonormalUp,
+                                                          const glm::dvec3& cameraPos,
+                                                          const glm::dvec3& cameraLookUp,
+                                                          int renderType) const
 {
     float h = font.height();
 
@@ -781,7 +781,7 @@ FontRenderer::BoundingBoxInformation FontRenderer::render(Font& font,
                                                           int textMinSize,
                                                           int textMaxSize,
                                                           const glm::dmat4& mvpMatrix,
-                                                        const glm::vec3& orthonormalRight,
+                                                          const glm::vec3& orthonormalRight,
                                                           const glm::vec3& orthonormalUp,
                                                           const glm::dvec3& cameraPos,
                                                           const glm::dvec3& cameraLookUp,
@@ -812,7 +812,7 @@ FontRenderer::BoundingBoxInformation FontRenderer::render(Font& font,
                                                           int textMinSize,
                                                           int textMaxSize,
                                                           const glm::dmat4& mvpMatrix,
-                                                        const glm::vec3& orthonormalRight,
+                                                          const glm::vec3& orthonormalRight,
                                                           const glm::vec3& orthonormalUp,
                                                           const glm::dvec3& cameraPos,
                                                           const glm::dvec3& cameraLookUp,
