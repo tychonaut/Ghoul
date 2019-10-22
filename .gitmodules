@@ -18,7 +18,7 @@ url=http://git.sv.nongnu.org/r/freetype/freetype2.git
 	url = https://github.com/Lua/Lua.git
 [submodule "ext/glbinding"]
 	path = ext/glbinding
-	url = https://github.com/cginternals/glbinding.git
+	url = https://github.com/tychonaut/glbinding.git
 [submodule "ext/websocketpp"]
 	path = ext/websocketpp
 	url = https://github.com/zaphoyd/websocketpp.git
