@@ -3,3 +3,5 @@ bin/
 build/
 doc/
 *.swp
+ext/googletest/
+.gitignore
